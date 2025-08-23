@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#g)"/>
+  <!-- Bowl -->
+  <g transform="translate(0,40)">
+    <ellipse cx="512" cy="660" rx="260" ry="80" fill="#1F2937" opacity="0.12"/>
+    <path d="M280 520c0 160 180 200 232 200s232-40 232-200H280z" fill="#F3F4F6"/>
+    <path d="M280 520c0 30 180 70 232 70s232-40 232-70" fill="none" stroke="#E5E7EB" stroke-width="14"/>
+    <!-- Grain stalks -->
+    <g stroke="#F59E0B" stroke-width="18" stroke-linecap="round" fill="none">
+      <path d="M480 540 Q470 420 430 360"/>
+      <path d="M544 540 Q554 420 594 360"/>
+    </g>
+    <!-- Grain kernels -->
+    <g fill="#F59E0B">
+      <ellipse cx="430" cy="360" rx="16" ry="26"/>
+      <ellipse cx="410" cy="384" rx="14" ry="22"/>
+      <ellipse cx="450" cy="384" rx="14" ry="22"/>
+      <ellipse cx="594" cy="360" rx="16" ry="26"/>
+      <ellipse cx="614" cy="384" rx="14" ry="22"/>
+      <ellipse cx="574" cy="384" rx="14" ry="22"/>
+    </g>
+    <!-- FMC mark -->
+    <text x="512" y="760" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="96" fill="#FFFFFF" opacity="0.9">FMC</text>
+  </g>
+</svg>

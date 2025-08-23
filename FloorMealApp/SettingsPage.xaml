@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ClientLedgerApp"
+             x:Class="ClientLedgerApp.SettingsPage"
+             x:Name="RootPage"
+             Title="Settings">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:StringNullOrWhiteSpaceToBoolConverter x:Key="NullOrWhiteToBool" />
+            <local:DoubleZeroToEmptyConverter x:Key="ZeroToEmpty" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <!-- User Details -->
+            <Label Text="User Details" FontAttributes="Bold" />
+
+            <!-- Profile Image Section -->
+            <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                <!-- Avatar with tap to pick image and plus overlay when empty -->
+                <Grid HeightRequest="96" WidthRequest="96" InputTransparent="False">
+                    <Frame HeightRequest="96" WidthRequest="96"
+                           CornerRadius="48"
+                           Padding="0"
+                           HasShadow="False"
+                           BackgroundColor="LightGray"
+                           InputTransparent="True" />
+                    <Image HeightRequest="96" WidthRequest="96"
+                           Aspect="AspectFill"
+                           Source="{Binding ProfileImagePath}"
+                           InputTransparent="True" />
+                    <Label Text="+"
+                           FontSize="36"
+                           TextColor="White"
+                           HorizontalTextAlignment="Center"
+                           VerticalTextAlignment="Center"
+                           IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}}"
+                           InputTransparent="True" />
+
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnAvatarTapped" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <!-- Profile Image Buttons -->
+                <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Button Text="📷 Change Photo" 
+                            BackgroundColor="#2196F3" 
+                            TextColor="White" 
+                            CornerRadius="15"
+                            FontSize="12"
+                            Clicked="OnAvatarTapped" />
+                    <Button Text="🗑️ Remove" 
+                            BackgroundColor="#F44336" 
+                            TextColor="White" 
+                            CornerRadius="15"
+                            FontSize="12"
+                            Command="{Binding RemoveProfileImageCommand}"
+                            IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}, ConverterParameter=Invert}" />
+                </HorizontalStackLayout>
+                
+                <!-- Image Status -->
+                <Label Text="Tap image or button to change profile photo" 
+                       FontSize="12" 
+                       TextColor="Gray" 
+                       HorizontalTextAlignment="Center"
+                       IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}}" />
+                <Label Text="✅ Profile photo will be uploaded to cloud when you save" 
+                       FontSize="12" 
+                       TextColor="Green" 
+                       HorizontalTextAlignment="Center"
+                       IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}, ConverterParameter=Invert}" />
+            </VerticalStackLayout>
+
+            <Entry Placeholder="First Name" Text="{Binding FirstName}" MaxLength="15"  />
+            <Entry Placeholder="Last Name" Text="{Binding LastName}" MaxLength="15" />
+            <Entry Placeholder="Floor Meal Name" Text="{Binding FloorMealName}" MaxLength="25" FontAttributes="Bold" TextColor="#7C3AED" />
+            <Entry Placeholder="Contact Number" x:Name="ContactEntry" Text="{Binding ContactNumber}" MaxLength="10" Keyboard="Telephone" TextChanged="OnContactTextChanged" />
+            <Entry Placeholder="Mail Id" Text="{Binding MailId}" IsEnabled="False" TextColor="#d308b8"/>
+
+            <BoxView HeightRequest="1" BackgroundColor="LightGray" />
+
+            <!-- Default Settings -->
+            <Label Text="Default Settings" FontAttributes="Bold" />
+            <Picker Title="Default Measurement Unit" SelectedItem="{Binding DefaultMeasurementUnit}">
+                <Picker.Items>
+                    <x:String>kg</x:String>
+                    <x:String>gram</x:String>
+                    <x:String>pyl</x:String>
+                </Picker.Items>
+            </Picker>
+            <Picker Title="Default Floor Item" ItemsSource="{Binding Items}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding DefaultItem}" />
+
+            <BoxView HeightRequest="1" BackgroundColor="LightGray" />
+
+            <!-- Item Prices -->
+            <Label Text="Item Prices" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Items}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Padding="0,4">
+                            <Entry Grid.Column="0" Placeholder="Item name" Text="{Binding Name}" />
+
+                            <Grid Grid.Column="1">
+                                <!-- Price / kg -->
+                                <Entry Placeholder="Price / kg" WidthRequest="140" Keyboard="Numeric" HorizontalTextAlignment="End" IsVisible="False"
+                                       Text="{Binding PricePerKg, Mode=TwoWay, Converter={StaticResource ZeroToEmpty}}">
+                                    <Entry.Triggers>
+                                        <DataTrigger TargetType="Entry" Value="kg"
+                                                     Binding="{Binding Source={x:Reference RootPage}, Path=BindingContext.DefaultMeasurementUnit}">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                    </Entry.Triggers>
+                                </Entry>
+                                <!-- Price / gram -->
+                                <Entry Placeholder="Price / gram" WidthRequest="140" Keyboard="Numeric" HorizontalTextAlignment="End" IsVisible="False"
+                                       Text="{Binding PricePerGram, Mode=TwoWay, Converter={StaticResource ZeroToEmpty}}">
+                                    <Entry.Triggers>
+                                        <DataTrigger TargetType="Entry" Value="gram"
+                                                     Binding="{Binding Source={x:Reference RootPage}, Path=BindingContext.DefaultMeasurementUnit}">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                    </Entry.Triggers>
+                                </Entry>
+                                <!-- Price / pyl (5 kg) -->
+                                <Entry Placeholder="Price / pyl (5 kg)" WidthRequest="160" Keyboard="Numeric" HorizontalTextAlignment="End" IsVisible="False"
+                                       Text="{Binding PricePerPyl, Mode=TwoWay, Converter={StaticResource ZeroToEmpty}}">
+                                    <Entry.Triggers>
+                                        <DataTrigger TargetType="Entry" Value="pyl"
+                                                     Binding="{Binding Source={x:Reference RootPage}, Path=BindingContext.DefaultMeasurementUnit}">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                    </Entry.Triggers>
+                                </Entry>
+                            </Grid>
+
+                            <!-- Remove Item Button -->
+                            <Button Grid.Column="2" 
+                                    Text="❌" 
+                                    BackgroundColor="Transparent" 
+                                    TextColor="Red" 
+                                    FontSize="16"
+                                    WidthRequest="40"
+                                    HeightRequest="40"
+                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.RemoveItemCommand}"
+                                    CommandParameter="{Binding}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="➕ Add Item" 
+                    BackgroundColor="#4CAF50" 
+                    TextColor="White" 
+                    CornerRadius="20"
+                    Clicked="OnAddItemClicked" />
+
+            <Button Text="💾 Save Settings" 
+                    BackgroundColor="#4F46E5" 
+                    TextColor="White" 
+                    CornerRadius="20"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    Clicked="OnSaveClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

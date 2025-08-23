@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ClientLedgerApp"
+             x:Class="ClientLedgerApp.ClientDetailPage"
+             x:Name="RootPage"
+             Title="{Binding Name, StringFormat='Mr/Mrs: {0}'}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:DoubleZeroToEmptyConverter x:Key="ZeroToEmpty" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <!-- Header totals -->
+            <Frame Padding="8" BackgroundColor="{DynamicResource SecondaryColor}" CornerRadius="12">
+                <Grid ColumnDefinitions="*,*,*">
+                    <VerticalStackLayout>
+                        <Label Text="Pending" FontAttributes="Bold"/>
+                        <Label Text="{Binding Pending, StringFormat='₹{0:N2}'}" FontSize="18" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Paid" FontAttributes="Bold"/>
+                        <Label Text="{Binding Received, StringFormat='₹{0:N2}'}" FontSize="18" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="2">
+                        <Label Text="Total" FontAttributes="Bold"/>
+                        <Label Text="{Binding Total, StringFormat='₹{0:N2}'}" FontSize="18" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Add Order Form -->
+            <Frame>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Add Order" FontAttributes="Bold"/>
+                    <Picker Title="Item" ItemsSource="{Binding AvailableItems}" SelectedItem="{Binding NewItem}" />
+                    <HorizontalStackLayout Spacing="8">
+                        <Entry Keyboard="Numeric" Placeholder="Weight" Text="{Binding NewWeightKg, Converter={StaticResource ZeroToEmpty}}" WidthRequest="120"/>
+                        <Picker WidthRequest="90" SelectedItem="{Binding NewWeightUnit}">
+                            <Picker.Items>
+                                <x:String>kg</x:String>
+                                <x:String>gram</x:String>
+                                <x:String>pyl</x:String>
+                            </Picker.Items>
+                        </Picker>
+                                            </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="{Binding SelectedUnitPriceDisplay}" VerticalTextAlignment="Center"/>
+                        <Label Text="{Binding NewTotal, StringFormat='Total: ₹{0:N2}'}" VerticalTextAlignment="Center"/>
+                    </HorizontalStackLayout>
+                    <Button Text="Add Order" Command="{Binding AddOrderCommand}"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Receive Payment Form -->
+            <Frame>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Receive Payment" FontAttributes="Bold"/>
+                    <Entry Keyboard="Numeric" Placeholder="Amount" Text="{Binding ReceiveAmount, Converter={StaticResource ZeroToEmpty}}" />
+                    <DatePicker Date="{Binding ReceiveDate}"/>
+                    <HorizontalStackLayout>
+                        <Button Text="Add Payment" Command="{Binding ReceivePaymentCommand}"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- History Controls -->
+            <Frame>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="History" FontAttributes="Bold"/>
+                    <HorizontalStackLayout Spacing="12">
+                        <Picker Title="Filter" SelectedItem="{Binding HistoryFilter}">
+                            <Picker.Items>
+                                <x:String>All</x:String>
+                                <x:String>Order</x:String>
+                                <x:String>Payment</x:String>
+                            </Picker.Items>
+                        </Picker>
+                                            </HorizontalStackLayout>
+
+                    <!-- History list as cards to avoid table alignment issues on Android -->
+                    <CollectionView ItemsSource="{Binding HistoryVisibleItems}" HeightRequest="500" SelectionMode="None">
+                        <CollectionView.EmptyView>
+                            <Label Text="No history yet." HorizontalOptions="Center"/>
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Padding="10" Margin="0,4" HasShadow="False" BorderColor="#DDD">
+                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <!-- Title: Item or Paid, and Amount/Total on the right -->
+                                        <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Spacing="8">
+                                            <Label Text="{Binding Type}" FontAttributes="Bold" />
+                                            <Label FontAttributes="Bold">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="Order">
+                                                        <Setter Property="Text" Value="{Binding Item}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="Payment">
+                                                        <Setter Property="Text" Value="Paid" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </HorizontalStackLayout>
+                                        <Label Grid.Row="0" Grid.Column="1" FontAttributes="Bold" HorizontalTextAlignment="End">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="Order">
+                                                    <Setter Property="Text" Value="{Binding Total, StringFormat='₹{0:N2}'}" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="Payment">
+                                                    <Setter Property="Text" Value="{Binding Amount, StringFormat='₹{0:N2}'}" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+
+                                        <!-- Details: timestamp and weight/rate for orders -->
+                                        <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="16">
+                                            <Label Text="{Binding Timestamp, StringFormat='{}{0:dd MMM yyyy HH:mm}'}" Opacity="0.7" />
+                                            <HorizontalStackLayout Spacing="12">
+                                                <HorizontalStackLayout.Triggers>
+                                                    <DataTrigger TargetType="HorizontalStackLayout" Binding="{Binding Type}" Value="Order">
+                                                        <Setter Property="IsVisible" Value="True" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="HorizontalStackLayout" Binding="{Binding Type}" Value="Payment">
+                                                        <Setter Property="IsVisible" Value="False" />
+                                                    </DataTrigger>
+                                                </HorizontalStackLayout.Triggers>
+                                                <Label Text="{Binding WeightKg, StringFormat='{0:N2} kg'}" />
+                                                <Label Text="{Binding RatePerKg, StringFormat='₹/kg {0:N2}'}" />
+                                            </HorizontalStackLayout>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Pagination controls -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="10,6,10,0">
+                        <Button Text="Prev" IsEnabled="{Binding HasPrevPage}" Command="{Binding PrevPageCommand}" />
+                        <Label Grid.Column="1" HorizontalTextAlignment="Center" Text="{Binding HistoryPageDisplay}" />
+                        <Button Grid.Column="2" Text="Next" IsEnabled="{Binding HasNextPage}" Command="{Binding NextPageCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Removed duplicate Orders list under history as requested -->
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

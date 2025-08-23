@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ClientLedgerApp"
+             x:Class="ClientLedgerApp.MainPage"
+             x:Name="RootPage"
+             Title="{Binding Source={x:Reference RootPage}, Path=BindingContext.PageTitle}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:ProfileBackgroundConverter x:Key="ProfileBg"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+        <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Sync now" Priority="-2" Order="Primary" Clicked="OnSyncNowClicked" />
+        <ToolbarItem Text="Settings" Priority="-1" Order="Primary" Clicked="OnSettingsClicked" />
+        <ToolbarItem Text="Add Client" Priority="0" Order="Primary" Command="{Binding AddClientCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Content>
+        <Grid>
+            <Image Source="Resources/Images/dashboard_bg.svg" Aspect="AspectFill"/>
+            <Grid>
+                <Grid.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#000000" Offset="0"/>
+                        <GradientStop Color="#00000000" Offset="0.3"/>
+                        <GradientStop Color="#00000033" Offset="1"/>
+                    </LinearGradientBrush>
+                </Grid.Background>
+                <Grid RowDefinitions="Auto,Auto,*" Padding="16" RowSpacing="12">
+            <!-- Search -->
+            <SearchBar Grid.Row="0"
+                       Placeholder="Search clients..."
+                       Text="{Binding SearchText}"
+                       TextChanged="SearchBar_TextChanged"/>
+
+            <!-- Total Pending Card -->
+            <Frame Grid.Row="1" BackgroundColor="{DynamicResource SecondaryColor}" Padding="16" CornerRadius="12">
+                <VerticalStackLayout>
+                    <Label Text="Total Pending (All Clients)" FontAttributes="Bold"/>
+                    <Label Text="{Binding TotalPending, StringFormat='₹{0:N2}'}" FontSize="24" FontAttributes="Bold"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Client List -->
+            <CollectionView Grid.Row="2" ItemsSource="{Binding Clients}" SelectionMode="Single" SelectionChanged="CollectionView_SelectionChanged">
+                <CollectionView.EmptyView>
+                    <Label Text="No clients yet. Use Add Client to create." HorizontalOptions="Center" VerticalOptions="Center"/>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="12" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
+                            <!-- Profile Image -->
+                            <Frame Grid.RowSpan="3" HeightRequest="44" WidthRequest="44" CornerRadius="22" Padding="0" HasShadow="False" BackgroundColor="{Binding ., Converter={StaticResource ProfileBg}}">
+                                <Image Source="{Binding PhotoPath}" Aspect="AspectFill" />
+                            </Frame>
+                            <!-- Name and contact -->
+                            <Label Grid.Column="1" Grid.Row="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16"/>
+                            <Label Grid.Column="1" Grid.Row="1" Text="{Binding Contact}" Opacity="0.7"/>
+                            <Label Grid.Column="1" Grid.Row="2" Text="{Binding Profile}" LineBreakMode="TailTruncation" MaxLines="1" Opacity="0.7"/>
+                            <!-- Orders/Pending -->
+                            <HorizontalStackLayout Grid.Row="2" Grid.Column="2" Spacing="12" VerticalOptions="End">
+                                <Label Text="{Binding OrderCount, StringFormat='Orders: {0}'}"/>
+                                <Label Text="{Binding Pending, StringFormat='Pending: ₹{0:N2}'}"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+            </Grid>
+            
+            <!-- Floating Developer Info Button -->
+            <Frame BackgroundColor="#667eea"
+                   CornerRadius="30"
+                   HeightRequest="60"
+                   WidthRequest="60"
+                   Padding="0"
+                   HasShadow="True"
+                   HorizontalOptions="End"
+                   VerticalOptions="End"
+                   Margin="20,20,20,100">
+                <Label Text="👨‍💻"
+                       FontSize="24"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       TextColor="White">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnDeveloperInfoTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Frame>
+        </Grid>
+    </ContentPage.Content>
+</ContentPage>

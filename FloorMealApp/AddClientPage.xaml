@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ClientLedgerApp.AddClientPage"
+             Title="Add Client">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Image x:Name="PhotoPreview" HeightRequest="120" Aspect="AspectFill" />
+            <HorizontalStackLayout Spacing="12">
+                <Button Text="Pick from Files" Clicked="PickPhoto_Clicked" />
+                <Button Text="Take Photo" Clicked="CapturePhoto_Clicked" />
+            </HorizontalStackLayout>
+
+            <Entry Placeholder="Client Name (max 25)" MaxLength="25" Text="{Binding Name}"/>
+            <Label TextColor="Red" IsVisible="{Binding NameErrorVisible}" Text="Name is required and must be 25 characters or fewer." />
+
+            <Entry Placeholder="Contact (10 digits)"
+                   Keyboard="Numeric"
+                   MaxLength="10"
+                   TextChanged="Contact_TextChanged"
+                   Text="{Binding Contact}"/>
+            <Label TextColor="Red" IsVisible="{Binding ContactErrorVisible}" Text="Contact must be exactly 10 digits." />
+
+            <Editor Placeholder="Notes" AutoSize="TextChanges" Text="{Binding Notes}"/>
+
+            <Button Text="Save" Command="{Binding SaveCommand}"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

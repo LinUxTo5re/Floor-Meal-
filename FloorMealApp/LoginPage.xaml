@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ClientLedgerApp.LoginPage"
+             Title="Login"
+             BackgroundColor="#0F172A"
+             NavigationPage.HasNavigationBar="False">
+    <VerticalStackLayout Padding="24" Spacing="16">
+        <Label Text="Sign in" FontSize="24" FontAttributes="Bold" TextColor="White"/>
+        <Label Text="Enter your Gmail address to continue" TextColor="#D1D5DB"/>
+        <Entry Placeholder="example@gmail.com" Keyboard="Email" Text="{Binding Email}"/>
+        <Button Text="Send code" Command="{Binding SendOtpCommand}"/>
+        <Label Text="Only gmail.com addresses are supported." FontSize="12" Opacity="0.8" TextColor="#9CA3AF"/>
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*" IsVisible="{Binding Sent}">
+            <Label Grid.Row="0" Text="Enter the 6-digit code we emailed to you" TextColor="#D1D5DB" />
+            <Entry Grid.Row="1" Placeholder="123456" Keyboard="Numeric" MaxLength="6" Text="{Binding Otp}"/>
+        </Grid>
+        <Button Text="Verify" Command="{Binding VerifyCommand}" IsVisible="{Binding Sent}"/>
+    </VerticalStackLayout>
+</ContentPage>

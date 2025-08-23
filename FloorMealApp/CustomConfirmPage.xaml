@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ClientLedgerApp.CustomConfirmPage"
+             BackgroundColor="Transparent"
+             NavigationPage.HasNavigationBar="False">
+    
+    <!-- Semi-transparent overlay -->
+    <Grid BackgroundColor="#80000000">
+        
+        <!-- Confirm Container -->
+        <Frame x:Name="ConfirmFrame"
+               BackgroundColor="White"
+               CornerRadius="20"
+               HasShadow="True"
+               Padding="0"
+               VerticalOptions="Center"
+               HorizontalOptions="Center"
+               WidthRequest="320"
+               MaximumWidthRequest="350">
+            
+            <StackLayout Spacing="0">
+                
+                <!-- Header with Icon -->
+                <Grid x:Name="HeaderGrid" 
+                      HeightRequest="80"
+                      BackgroundColor="#FF9800">
+                    
+                    <Label x:Name="IconLabel"
+                           Text="❓"
+                           FontSize="32"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           TextColor="White" />
+                </Grid>
+                
+                <!-- Content Area -->
+                <StackLayout Padding="24,20,24,24" Spacing="16">
+                    
+                    <!-- Title -->
+                    <Label x:Name="TitleLabel"
+                           Text="Confirm"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#333333"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                    
+                    <!-- Message -->
+                    <Label x:Name="MessageLabel"
+                           Text="Are you sure?"
+                           FontSize="16"
+                           TextColor="#666666"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"
+                           LineBreakMode="WordWrap" />
+                    
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,10,*" Margin="0,10,0,0">
+                        
+                        <!-- No Button -->
+                        <Button x:Name="NoButton"
+                                Grid.Column="0"
+                                Text="No"
+                                BackgroundColor="#E0E0E0"
+                                TextColor="#666666"
+                                CornerRadius="25"
+                                HeightRequest="50"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                Clicked="OnNoClicked" />
+                        
+                        <!-- Yes Button -->
+                        <Button x:Name="YesButton"
+                                Grid.Column="2"
+                                Text="Yes"
+                                BackgroundColor="#FF9800"
+                                TextColor="White"
+                                CornerRadius="25"
+                                HeightRequest="50"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                Clicked="OnYesClicked" />
+                        
+                    </Grid>
+                    
+                </StackLayout>
+                
+            </StackLayout>
+            
+        </Frame>
+        
+    </Grid>
+    
+</ContentPage>

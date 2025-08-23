@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ClientLedgerApp.CustomAlertPage"
+             BackgroundColor="Transparent"
+             NavigationPage.HasNavigationBar="False">
+    
+    <!-- Semi-transparent overlay -->
+    <Grid BackgroundColor="#80000000">
+        
+        <!-- Alert Container -->
+        <Frame x:Name="AlertFrame"
+               BackgroundColor="White"
+               CornerRadius="20"
+               HasShadow="True"
+               Padding="0"
+               VerticalOptions="Center"
+               HorizontalOptions="Center"
+               WidthRequest="320"
+               MaximumWidthRequest="350">
+            
+            <StackLayout Spacing="0">
+                
+                <!-- Header with Icon -->
+                <Grid x:Name="HeaderGrid" 
+                      HeightRequest="80"
+                      BackgroundColor="#2196F3">
+                    
+                    <Label x:Name="IconLabel"
+                           Text="ℹ️"
+                           FontSize="32"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           TextColor="White" />
+                </Grid>
+                
+                <!-- Content Area -->
+                <StackLayout Padding="24,20,24,24" Spacing="16">
+                    
+                    <!-- Title -->
+                    <Label x:Name="TitleLabel"
+                           Text="Title"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#333333"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                    
+                    <!-- Message -->
+                    <Label x:Name="MessageLabel"
+                           Text="Message"
+                           FontSize="16"
+                           TextColor="#666666"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"
+                           LineBreakMode="WordWrap" />
+                    
+                    <!-- OK Button -->
+                    <Button x:Name="OkButton"
+                            Text="OK"
+                            BackgroundColor="#2196F3"
+                            TextColor="White"
+                            CornerRadius="25"
+                            HeightRequest="50"
+                            FontSize="16"
+                            FontAttributes="Bold"
+                            Clicked="OnOkClicked"
+                            Margin="0,10,0,0" />
+                    
+                </StackLayout>
+                
+            </StackLayout>
+            
+        </Frame>
+        
+    </Grid>
+    
+</ContentPage>
