@@ -1,5 +1,5 @@
 {
   "EnableAwsSync": true,
   "AwsRegion": "us-east-1",
-  "CognitoIdentityPoolId": "us-east-1:8d50a0ed-21c8-4399-9a18-8b98a9228741"
+  "CognitoIdentityPoolId": "<Cognito_Identity_Pool_Id>"
 }
