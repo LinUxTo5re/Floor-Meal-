@@ -41,9 +41,9 @@
 	  <AndroidKeyStore>True</AndroidKeyStore>
 	  <AndroidSigningKeyStore>C:\keys\fmc.keystore</AndroidSigningKeyStore>
 	  <AndroidSigningKeyAlias>fmc</AndroidSigningKeyAlias>
-	  <AndroidSigningKeyStorePassword>FMC@LinUxTo5re</AndroidSigningKeyStorePassword>
-	  <AndroidSigningStorePass>FMC@LinUxTo5re</AndroidSigningStorePass>
-	  <AndroidSigningKeyPass>FMC@LinUxTo5re</AndroidSigningKeyPass>
+	  <AndroidSigningKeyStorePassword>PASSWORD</AndroidSigningKeyStorePassword>
+	  <AndroidSigningStorePass>PASSWORD</AndroidSigningStorePass>
+	  <AndroidSigningKeyPass>PASSWORD</AndroidSigningKeyPass>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
