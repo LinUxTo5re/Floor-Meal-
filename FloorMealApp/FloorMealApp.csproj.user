@@ -3,8 +3,8 @@
   <PropertyGroup>
     <IsFirstTimeProjectOpen>False</IsFirstTimeProjectOpen>
     <ActiveDebugFramework>net9.0-android</ActiveDebugFramework>
-    <ActiveDebugProfile>Motorola edge 20 fusion (Android 13.0 - API 33)</ActiveDebugProfile>
-    <SelectedPlatformGroup>PhysicalDevice</SelectedPlatformGroup>
+    <ActiveDebugProfile>Android Emulator</ActiveDebugProfile>
+    <SelectedPlatformGroup>Emulator</SelectedPlatformGroup>
     <SelectedDevice>Android Emulator</SelectedDevice>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">

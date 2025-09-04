@@ -20,11 +20,9 @@ public class Client
 
     public string? Profile { get; set; }
 
-    public string? PhotoPath { get; set; } // ImgBB URL for display
-
-    public string? PhotoDeleteUrl { get; set; } // ImgBB delete URL
-
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
 }
 
 [Table("Order")]
@@ -45,6 +43,7 @@ public class Order
     public double Total { get; set; } // Derived: WeightKg * RatePerKg
 
     public DateTime Date { get; set; } = DateTime.UtcNow;
+    public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
 }
 
 [Table("Payment")]
@@ -61,6 +60,7 @@ public class Payment
     public DateTime Date { get; set; } = DateTime.UtcNow;
 
     public string? Note { get; set; }
+    public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
 }
 
 // Durable background job (Outbox) for non-blocking network work
@@ -85,6 +85,18 @@ public class OutboxJob
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 
     public string? LastError { get; set; }
+}
+
+// Deletion log for reflecting deletes to cloud
+[Table("DeletionLog")]
+public class DeletionLog
+{
+    [PrimaryKey, AutoIncrement]
+    public int Id { get; set; }
+    public string EntityType { get; set; } = string.Empty; // Client | Order | Payment
+    public int EntityId { get; set; }
+    [Indexed]
+    public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
 }
 
 [Table("AppSetting")]
@@ -171,6 +183,11 @@ public interface IDatabaseService
     Task<List<OutboxJob>> GetDueOutboxJobsAsync(DateTime utcNow, int max = 20);
     Task UpdateOutboxJobAsync(OutboxJob job);
     Task DeleteOutboxJobAsync(int id);
+
+    // Deletion log helpers
+    Task LogDeletionAsync(string entityType, int entityId);
+    Task<List<DeletionLog>> GetDeletionLogsAsync(int max = 200);
+    Task DeleteDeletionLogAsync(int id);
 }
 
 public class DatabaseService : IDatabaseService
@@ -193,6 +210,7 @@ public class DatabaseService : IDatabaseService
             await _db.CreateTableAsync<AppSetting>();
             await _db.CreateTableAsync<Credentials>();
             await _db.CreateTableAsync<OutboxJob>();
+            await _db.CreateTableAsync<DeletionLog>();
             await EnsureMigrationsAsync();
         }
         finally
@@ -207,61 +225,67 @@ public class DatabaseService : IDatabaseService
     {
         try
         {
-            await _db!.ExecuteAsync("ALTER TABLE Client ADD COLUMN PhotoPath TEXT");
-        }
-        catch { /* ignore if already exists */ }
-        
-        try
-        {
-            await _db!.ExecuteAsync("ALTER TABLE Client ADD COLUMN PhotoDeleteUrl TEXT");
-        }
-        catch { /* ignore if already exists */ }
-        
-        try
-        {
             await _db!.ExecuteAsync("ALTER TABLE Credentials ADD COLUMN ImgBBApiKey TEXT");
         }
         catch { /* ignore if already exists */ }
+
+        // Add ModifiedAt columns lazily
+        try { await _db!.ExecuteAsync("ALTER TABLE Client ADD COLUMN ModifiedAt TEXT"); } catch { }
+        try { await _db!.ExecuteAsync("ALTER TABLE [Order] ADD COLUMN ModifiedAt TEXT"); } catch { }
+        try { await _db!.ExecuteAsync("ALTER TABLE Payment ADD COLUMN ModifiedAt TEXT"); } catch { }
+
+        // Performance indexes (idempotent)
+        try { await _db!.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Client_Contact ON Client(Contact)"); } catch { }
+        try { await _db!.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Order_ClientId ON [Order](ClientId)"); } catch { }
+        try { await _db!.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Payment_ClientId ON Payment(ClientId)"); } catch { }
     }
 
     public async Task<int> AddClientAsync(Client client)
     {
         await EnsureInitializedAsync();
+        client.ModifiedAt = DateTime.UtcNow;
         return await _db!.InsertAsync(client);
     }
 
     public async Task UpdateClientAsync(Client client)
     {
         await EnsureInitializedAsync();
+        client.ModifiedAt = DateTime.UtcNow;
         await _db!.UpdateAsync(client);
     }
 
     public async Task DeleteClientAsync(int clientId)
     {
         await EnsureInitializedAsync();
-        // cascade: delete orders & payments for client
+        // cascade: delete orders & payments for client (log deletions first)
         var orders = await _db!.Table<Order>().Where(o => o.ClientId == clientId).ToListAsync();
         var payments = await _db.Table<Payment>().Where(p => p.ClientId == clientId).ToListAsync();
-        foreach (var o in orders) await _db.DeleteAsync(o);
-        foreach (var p in payments) await _db.DeleteAsync(p);
+        foreach (var o in orders)
+        {
+            await LogDeletionAsync("Order", o.Id);
+            await _db.DeleteAsync(o);
+        }
+        foreach (var p in payments)
+        {
+            await LogDeletionAsync("Payment", p.Id);
+            await _db.DeleteAsync(p);
+        }
+        await LogDeletionAsync("Client", clientId);
         await _db.DeleteAsync<Client>(clientId);
     }
 
     public async Task<List<Client>> GetClientsAsync(string? search = null)
     {
         await EnsureInitializedAsync();
-        var q = _db!.Table<Client>();
         if (!string.IsNullOrWhiteSpace(search))
         {
-            // sqlite-net async does not support Contains on server; fetch and filter locally for simplicity
-            var all = await q.ToListAsync();
-            search = search.Trim();
-            return all.Where(c => (c.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
-                               || (c.Contact?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
-                      .OrderBy(c => c.Name)
-                      .ToList();
+            var pattern = "%" + search.Trim().Replace("%", "[%]").Replace("_", "[_]") + "%";
+            // Use SQL LIKE for server-side filtering (NOCASE for case-insensitive)
+            var sql = "SELECT * FROM Client WHERE Name LIKE ? ESCAPE '[' COLLATE NOCASE OR Contact LIKE ? ESCAPE '[' COLLATE NOCASE ORDER BY Name";
+            return await _db!.QueryAsync<Client>(sql, pattern, pattern);
         }
-        return await q.OrderBy(c => c.Name).ToListAsync();
+        // No filter
+        return await _db!.Table<Client>().OrderBy(c => c.Name).ToListAsync();
     }
 
     public async Task<int> AddOrderAsync(Order order)
@@ -269,6 +293,7 @@ public class DatabaseService : IDatabaseService
         await EnsureInitializedAsync();
         // ensure total is consistent
         order.Total = order.WeightKg * order.RatePerKg;
+        order.ModifiedAt = DateTime.UtcNow;
         return await _db!.InsertAsync(order);
     }
 
@@ -276,30 +301,35 @@ public class DatabaseService : IDatabaseService
     {
         await EnsureInitializedAsync();
         order.Total = order.WeightKg * order.RatePerKg;
+        order.ModifiedAt = DateTime.UtcNow;
         await _db!.UpdateAsync(order);
     }
 
     public async Task DeleteOrderAsync(int orderId)
     {
         await EnsureInitializedAsync();
+        await LogDeletionAsync("Order", orderId);
         await _db!.DeleteAsync<Order>(orderId);
     }
 
     public async Task<int> AddPaymentAsync(Payment payment)
     {
         await EnsureInitializedAsync();
+        payment.ModifiedAt = DateTime.UtcNow;
         return await _db!.InsertAsync(payment);
     }
 
     public async Task UpdatePaymentAsync(Payment payment)
     {
         await EnsureInitializedAsync();
+        payment.ModifiedAt = DateTime.UtcNow;
         await _db!.UpdateAsync(payment);
     }
 
     public async Task DeletePaymentAsync(int paymentId)
     {
         await EnsureInitializedAsync();
+        await LogDeletionAsync("Payment", paymentId);
         await _db!.DeleteAsync<Payment>(paymentId);
     }
 
@@ -341,22 +371,33 @@ public class DatabaseService : IDatabaseService
     public async Task<List<ClientSummary>> GetClientSummariesAsync(string? search = null)
     {
         var clients = await GetClientsAsync(search);
+        if (clients.Count == 0) return new List<ClientSummary>();
+        var clientIds = clients.Select(c => c.Id).ToList();
+        var placeholders = string.Join(",", Enumerable.Repeat("?", clientIds.Count));
+        var args = clientIds.Cast<object>().ToArray();
+
+        // Batch load orders and payments for all clients in one query each
+        var orders = await _db!.QueryAsync<Order>($"SELECT * FROM [Order] WHERE ClientId IN ({placeholders})", args);
+        var payments = await _db!.QueryAsync<Payment>($"SELECT * FROM Payment WHERE ClientId IN ({placeholders})", args);
+
+        var totalsByClient = orders.GroupBy(o => o.ClientId).ToDictionary(g => g.Key, g => g.Sum(o => o.Total));
+        var countsByClient = orders.GroupBy(o => o.ClientId).ToDictionary(g => g.Key, g => g.Count());
+        var receivedByClient = payments.GroupBy(p => p.ClientId).ToDictionary(g => g.Key, g => g.Sum(p => p.Amount));
+
         var list = new List<ClientSummary>(clients.Count);
         foreach (var c in clients)
         {
-            var orders = await GetOrdersForClientAsync(c.Id);
-            var totals = orders.Sum(o => o.Total);
-            var payments = await GetPaymentsForClientAsync(c.Id);
-            var received = payments.Sum(p => p.Amount);
+            totalsByClient.TryGetValue(c.Id, out var totals);
+            receivedByClient.TryGetValue(c.Id, out var received);
+            countsByClient.TryGetValue(c.Id, out var orderCount);
             list.Add(new ClientSummary
             {
                 Id = c.Id,
                 Name = c.Name,
                 Contact = c.Contact,
                 Profile = c.Profile,
-                PhotoPath = c.PhotoPath,
-                Pending = Math.Max(0, totals - received),
-                OrderCount = orders.Count
+                Pending = Math.Max(0, (totals) - (received)),
+                OrderCount = orderCount
             });
         }
         return list.OrderBy(cs => cs.Name).ToList();
@@ -406,6 +447,7 @@ public class DatabaseService : IDatabaseService
     public async Task UpsertClientAsync(Client client)
     {
         await EnsureInitializedAsync();
+        client.ModifiedAt = DateTime.UtcNow;
         await _db!.InsertOrReplaceAsync(client);
     }
 
@@ -414,12 +456,14 @@ public class DatabaseService : IDatabaseService
         await EnsureInitializedAsync();
         // Ensure total is consistent when upserting
         order.Total = order.WeightKg * order.RatePerKg;
+        order.ModifiedAt = DateTime.UtcNow;
         await _db!.InsertOrReplaceAsync(order);
     }
 
     public async Task UpsertPaymentAsync(Payment payment)
     {
         await EnsureInitializedAsync();
+        payment.ModifiedAt = DateTime.UtcNow;
         await _db!.InsertOrReplaceAsync(payment);
     }
 
@@ -470,12 +514,31 @@ public class DatabaseService : IDatabaseService
         await EnsureInitializedAsync();
         await _db!.DeleteAsync<OutboxJob>(id);
     }
+// Deletion log helpers
+    public async Task LogDeletionAsync(string entityType, int entityId)
+    {
+        await EnsureInitializedAsync();
+        await _db!.InsertAsync(new DeletionLog { EntityType = entityType, EntityId = entityId, TimestampUtc = DateTime.UtcNow });
+    }
+
+    public async Task<List<DeletionLog>> GetDeletionLogsAsync(int max = 200)
+    {
+        await EnsureInitializedAsync();
+        return await _db!.Table<DeletionLog>().OrderBy(d => d.TimestampUtc).Take(max).ToListAsync();
+    }
+
+    public async Task DeleteDeletionLogAsync(int id)
+    {
+        await EnsureInitializedAsync();
+        await _db!.DeleteAsync<DeletionLog>(id);
+    }
 }
 
 // Main (Home) ViewModel
 public partial class MainViewModel : ObservableObject
 {
     private readonly IDatabaseService _db;
+    private readonly ICustomAlertService _alert;
     private const string SettingsPrefKey = "app.settings.json";
 
     public ObservableCollection<ClientSummary> Clients { get; } = new();
@@ -489,9 +552,10 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string pageTitle = "Home";
 
-    public MainViewModel(IDatabaseService db)
+    public MainViewModel(IDatabaseService db, ICustomAlertService alert)
     {
         _db = db;
+        _alert = alert;
     }
 
     [RelayCommand]
@@ -500,9 +564,13 @@ public partial class MainViewModel : ObservableObject
         await _db.InitializeAsync();
         var items = await _db.GetClientSummariesAsync(SearchText);
         Clients.Clear();
+        double totalPendingLocal = 0;
         foreach (var i in items)
+        {
             Clients.Add(i);
-        TotalPending = await _db.GetAllPendingAsync();
+            totalPendingLocal += i.Pending;
+        }
+        TotalPending = totalPendingLocal;
 
         // Update page title from settings if FloorMealName exists
         try
@@ -535,5 +603,26 @@ public partial class MainViewModel : ObservableObject
     {
         if (client == null) return;
         await Shell.Current.GoToAsync($"clientdetail?clientId={client.Id}");
+    }
+
+    [RelayCommand]
+    public async Task DeleteClientAsync(ClientSummary? client)
+    {
+        if (client == null) return;
+        var confirmed = await _alert.ShowConfirmAsync(
+            "Delete Client",
+            $"Are you sure you want to delete '{client.Name}'? This will also remove their orders and payments.",
+            "Delete", "Cancel", AlertType.Warning);
+        if (!confirmed) return;
+        await _db.DeleteClientAsync(client.Id);
+        await LoadAsync();
+        await _alert.ShowSuccessAsync($"Client '{client.Name}' deleted.", "Deleted");
+    }
+
+    [RelayCommand]
+    public async Task EditClientAsync(ClientSummary? client)
+    {
+        if (client == null) return;
+        await Shell.Current.GoToAsync($"editclient?clientId={client.Id}");
     }
 }

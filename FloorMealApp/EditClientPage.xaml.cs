@@ -1,20 +1,24 @@
-using System.Text.RegularExpressions;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Storage;
 
 namespace ClientLedgerApp;
 
-public partial class AddClientPage : ContentPage
+public partial class EditClientPage : ContentPage, IQueryAttributable
 {
-    private readonly AddClientViewModel _vm;
-    private readonly ICustomAlertService _alertService;
+    private readonly EditClientViewModel _vm;
 
-    public AddClientPage(AddClientViewModel vm)
+    public EditClientPage(EditClientViewModel vm)
     {
         InitializeComponent();
         _vm = vm;
-        _alertService = ServiceHelper.GetService<ICustomAlertService>();
         BindingContext = _vm;
+    }
+
+    public async void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("clientId", out var idObj) && idObj is string s && int.TryParse(s, out var id))
+        {
+            await _vm.LoadAsync(id);
+        }
     }
 
     private void Contact_TextChanged(object sender, TextChangedEventArgs e)
@@ -28,5 +32,4 @@ public partial class AddClientPage : ContentPage
                 entry.Text = digits;
         }
     }
-
-    }
+}

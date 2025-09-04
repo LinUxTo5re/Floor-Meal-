@@ -6,13 +6,11 @@ namespace ClientLedgerApp;
 public partial class SettingsPage : ContentPage
 {
     private readonly SettingsViewModel _vm;
-    private readonly ICustomAlertService _alertService;
 
     public SettingsPage()
     {
         InitializeComponent();
         _vm = ServiceHelper.GetService<SettingsViewModel>();
-        _alertService = ServiceHelper.GetService<ICustomAlertService>();
         BindingContext = _vm;
     }
 
@@ -33,19 +31,6 @@ public partial class SettingsPage : ContentPage
     private void OnAddItemClicked(object sender, EventArgs e)
     {
         _vm.AddItem();
-    }
-
-    // Handle both TapGestureRecognizer and Button.Clicked events
-    private async void OnAvatarTapped(object sender, EventArgs e)
-    {
-        try
-        {
-            await _vm.PickProfileImageAsync();
-        }
-        catch (Exception ex)
-        {
-            await _alertService.ShowErrorAsync($"Error picking profile image: {ex.Message}", "Avatar Error");
-        }
     }
 
     private void OnContactTextChanged(object sender, TextChangedEventArgs e)

@@ -55,18 +55,12 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IDatabaseService _db;
     private readonly IAwsSyncService _aws;
     private readonly ICustomAlertService _alertService;
-    private readonly IImgBBService _imgBBService;
 
     [ObservableProperty] private string firstName = string.Empty;
     [ObservableProperty] private string lastName = string.Empty;
     [ObservableProperty] private string floorMealName = string.Empty;
     [ObservableProperty] private string contactNumber = string.Empty;
     [ObservableProperty] private string mailId = string.Empty; // read-only in UI
-    [ObservableProperty] private string? profileImagePath;
-    [ObservableProperty] private string? profileImageDeleteUrl; // ImgBB delete URL
-
-    // Temporary local path for newly selected image (before upload)
-    private string? _tempLocalImagePath;
 
     [ObservableProperty] private string defaultMeasurementUnit = "pyl"; // kg | gram | pyl
     partial void OnDefaultMeasurementUnitChanged(string value)
@@ -105,12 +99,11 @@ public partial class SettingsViewModel : ObservableObject
 
     public ObservableCollection<ItemPrice> Items { get; } = new();
 
-    public SettingsViewModel(IDatabaseService db, ICustomAlertService alertService, IImgBBService imgBBService)
+    public SettingsViewModel(IDatabaseService db, ICustomAlertService alertService)
     {
         _db = db;
         _aws = ServiceHelper.GetService<IAwsSyncService>();
         _alertService = alertService;
-        _imgBBService = imgBBService;
     }
 
     [RelayCommand]
@@ -128,8 +121,6 @@ public partial class SettingsViewModel : ObservableObject
                 FloorMealName = data.FloorMealName;
                 ContactNumber = data.ContactNumber;
                 MailId = data.MailId;
-                ProfileImagePath = data.ProfileImagePath;
-                ProfileImageDeleteUrl = data.ProfileImageDeleteUrl;
                 DefaultMeasurementUnit = string.IsNullOrWhiteSpace(data.DefaultMeasurementUnit) ? "pyl" : data.DefaultMeasurementUnit;
                 DefaultItemName = string.IsNullOrWhiteSpace(data.DefaultItemName) ? "Wheat" : data.DefaultItemName;
                 Items.Clear();
@@ -204,76 +195,7 @@ public partial class SettingsViewModel : ObservableObject
         LastName = ln;
         FloorMealName = fm;
 
-        // Handle profile image upload to ImgBB if a new image was selected
-        string? finalProfileImagePath = ProfileImagePath;
-        string? finalProfileImageDeleteUrl = ProfileImageDeleteUrl;
-
-        if (!string.IsNullOrWhiteSpace(_tempLocalImagePath) && System.IO.File.Exists(_tempLocalImagePath))
-        {
-            try
-            {
-                // Check if ImgBB is configured
-                var isConfigured = await _imgBBService.IsConfiguredAsync();
-                if (!isConfigured)
-                {
-                    Debug.WriteLine("SettingsViewModel: ImgBB not configured, saving local path");
-                    // If ImgBB is not configured, keep the local path
-                    finalProfileImagePath = _tempLocalImagePath;
-                    finalProfileImageDeleteUrl = null;
-                }
-                else
-                {
-                    Debug.WriteLine("SettingsViewModel: Uploading profile image to ImgBB...");
-                    
-                    // Delete old image from ImgBB if exists
-                    if (!string.IsNullOrWhiteSpace(ProfileImageDeleteUrl))
-                    {
-                        try
-                        {
-                            await _imgBBService.DeleteImageAsync(ProfileImageDeleteUrl);
-                            Debug.WriteLine("SettingsViewModel: Old profile image deleted from ImgBB");
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"SettingsViewModel: Failed to delete old profile image: {ex.Message}");
-                        }
-                    }
-
-                    // Upload new image to ImgBB
-                    var userName = $"{fn}_{ln}".Replace(" ", "_");
-                    var response = await _imgBBService.UploadImageAsync(_tempLocalImagePath, $"profile_{userName}_{DateTime.Now:yyyyMMdd_HHmmss}");
-                    
-                    if (response?.success == true && response.data != null)
-                    {
-                        finalProfileImagePath = response.data.display_url;
-                        finalProfileImageDeleteUrl = response.data.delete_url;
-                        Debug.WriteLine($"SettingsViewModel: Profile image uploaded successfully - URL: {finalProfileImagePath}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine("SettingsViewModel: ImgBB upload failed, saving local path as fallback");
-                        // Fallback to local path if upload fails
-                        finalProfileImagePath = _tempLocalImagePath;
-                        finalProfileImageDeleteUrl = null;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"SettingsViewModel: ImgBB upload error: {ex.Message}");
-                // Fallback to local path if upload fails
-                finalProfileImagePath = _tempLocalImagePath;
-                finalProfileImageDeleteUrl = null;
-            }
-
-            // Clear temp path after processing
-            _tempLocalImagePath = null;
-        }
-
-        // Update the properties with final values
-        ProfileImagePath = finalProfileImagePath;
-        ProfileImageDeleteUrl = finalProfileImageDeleteUrl;
-
+        
         // Merge with existing settings to preserve AWS config; force EnableAwsSync=true
         var existingJson = await _db.GetSettingAsync(PrefKey) ?? string.Empty;
         var merged = string.IsNullOrWhiteSpace(existingJson)
@@ -284,9 +206,7 @@ public partial class SettingsViewModel : ObservableObject
         merged.FloorMealName = fm;
         merged.ContactNumber = digits;
         merged.MailId = MailId?.Trim() ?? string.Empty;
-        merged.ProfileImagePath = string.IsNullOrWhiteSpace(ProfileImagePath) ? null : ProfileImagePath;
-        merged.ProfileImageDeleteUrl = string.IsNullOrWhiteSpace(ProfileImageDeleteUrl) ? null : ProfileImageDeleteUrl;
-        merged.DefaultMeasurementUnit = DefaultMeasurementUnit;
+                merged.DefaultMeasurementUnit = DefaultMeasurementUnit;
         merged.DefaultItemName = (DefaultItem?.Name ?? (string.IsNullOrWhiteSpace(DefaultItemName) ? "Wheat" : DefaultItemName));
         merged.Items = Items.Select(i => new ItemPriceDto { Name = i.Name?.Trim() ?? string.Empty, PricePerKg = i.PricePerKg, PricePerGram = i.PricePerGram, PricePerPyl = i.PricePerPyl }).ToList();
         merged.EnableAwsSync = true;
@@ -303,69 +223,6 @@ public partial class SettingsViewModel : ObservableObject
         catch { }
         
         await _alertService.ShowSuccessAsync("Settings saved successfully.", "Settings Saved");
-    }
-
-    [RelayCommand]
-    public async Task PickProfileImageAsync()
-    {
-        try
-        {            
-            var result = await FilePicker.PickAsync(new PickOptions
-            {
-                PickerTitle = "Pick profile image",
-                FileTypes = FilePickerFileType.Images
-            });
-            
-            if (result != null)
-            {
-                // Store the local path temporarily - will be uploaded to ImgBB when Save is clicked
-                _tempLocalImagePath = result.FullPath;
-                // Update the UI to show the selected image immediately
-                ProfileImagePath = result.FullPath;
-                await _alertService.ShowSuccessAsync("Profile image selected successfully! Click Save to upload to cloud.", "Image Selected");
-            }
-            else
-            {
-                await _alertService.ShowInfoAsync("No image was selected.", "No Selection");
-            }
-        }
-        catch (Exception ex)
-        {
-            await _alertService.ShowErrorAsync($"Failed to pick image: {ex.Message}", "Image Selection Failed");
-        }
-    }
-
-    [RelayCommand]
-    public async Task RemoveProfileImageAsync()
-    {
-        var confirmed = await _alertService.ShowConfirmAsync(
-            "Remove Profile Image", 
-            "Are you sure you want to remove your profile image?",
-            "Remove", "Cancel", 
-            AlertType.Warning);
-            
-        if (confirmed)
-        {
-            // Delete from ImgBB if exists
-            if (!string.IsNullOrWhiteSpace(ProfileImageDeleteUrl))
-            {
-                try
-                {
-                    await _imgBBService.DeleteImageAsync(ProfileImageDeleteUrl);
-                    Debug.WriteLine("SettingsViewModel: Profile image deleted from ImgBB");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"SettingsViewModel: Failed to delete profile image: {ex.Message}");
-                }
-            }
-
-            ProfileImagePath = null;
-            ProfileImageDeleteUrl = null;
-            _tempLocalImagePath = null;
-            
-            await _alertService.ShowSuccessAsync("Profile image removed successfully!", "Image Removed");
-        }
     }
 
     [RelayCommand]

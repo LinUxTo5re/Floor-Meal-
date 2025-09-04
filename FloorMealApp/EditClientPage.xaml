@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="ClientLedgerApp.AddClientPage"
-             Title="Add Client">
+             x:Class="ClientLedgerApp.EditClientPage"
+             Title="Edit Client">
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="12">
-            
             <Entry Placeholder="Client Name (max 25)" MaxLength="25" Text="{Binding Name}"/>
             <Label TextColor="Red" IsVisible="{Binding NameErrorVisible}" Text="Name is required and must be 25 characters or fewer." />
 

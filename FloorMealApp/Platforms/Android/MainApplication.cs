@@ -13,5 +13,12 @@ public class MainApplication : MauiApplication
 	{
 	}
 
+	public override void OnCreate()
+	{
+		base.OnCreate();
+		// Schedule periodic background sync job
+		SyncJobService.Schedule(this);
+	}
+
 	protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }
