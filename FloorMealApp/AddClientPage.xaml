@@ -5,12 +5,7 @@
              Title="Add Client">
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="12">
-            <Image x:Name="PhotoPreview" HeightRequest="120" Aspect="AspectFill" />
-            <HorizontalStackLayout Spacing="12">
-                <Button Text="Pick from Files" Clicked="PickPhoto_Clicked" />
-                <Button Text="Take Photo" Clicked="CapturePhoto_Clicked" />
-            </HorizontalStackLayout>
-
+            
             <Entry Placeholder="Client Name (max 25)" MaxLength="25" Text="{Binding Name}"/>
             <Label TextColor="Red" IsVisible="{Binding NameErrorVisible}" Text="Name is required and must be 25 characters or fewer." />
 

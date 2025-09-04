@@ -245,13 +245,13 @@ public partial class ClientDetailViewModel : ObservableObject
         
         await _alertService.ShowSuccessAsync($"Order added: {NewItem} - ₹{order.Total:N2}", "Order Added");
         
-        // Enqueue AWS push job (durable)
+        // Enqueue AWS push job disabled; background periodic sync will push changes
         try
         {
             var sjson = await _db.GetSettingAsync(SettingsPrefKey) ?? string.Empty;
             var sdata = string.IsNullOrWhiteSpace(sjson) ? new SettingsData() : (JsonSerializer.Deserialize<SettingsData>(sjson) ?? new SettingsData());
             var mail = sdata.MailId?.Trim();
-            if (!string.IsNullOrWhiteSpace(mail) && sdata.EnableAwsSync)
+            if (false && !string.IsNullOrWhiteSpace(mail) && sdata.EnableAwsSync)
             {
                 var payload = new { OrderId = order.Id };
                 await _db.EnqueueOutboxJobAsync(new OutboxJob
@@ -266,8 +266,8 @@ public partial class ClientDetailViewModel : ObservableObject
         }
         catch { }
 
-        // Hint scheduler to run soon
-        try { var scheduler = ServiceHelper.GetService<SyncScheduler>(); _ = scheduler.SyncNowAsync(); } catch { }
+        // Immediate sync disabled to keep add local-only
+        // try { var scheduler = ServiceHelper.GetService<SyncScheduler>(); _ = scheduler.SyncNowAsync(); } catch { }
     }
 
     [RelayCommand]
@@ -428,13 +428,13 @@ public partial class ClientDetailViewModel : ObservableObject
         ReceiveAmount = 0;
         ReceiveDate = DateTime.Today;
         await RefreshAsync();
-        // Enqueue AWS push job (durable)
+        // Enqueue AWS push job disabled; background periodic sync will push changes
         try
         {
             var sjson = await _db.GetSettingAsync(SettingsPrefKey) ?? string.Empty;
             var sdata = string.IsNullOrWhiteSpace(sjson) ? new SettingsData() : (JsonSerializer.Deserialize<SettingsData>(sjson) ?? new SettingsData());
             var mail = sdata.MailId?.Trim();
-            if (!string.IsNullOrWhiteSpace(mail) && sdata.EnableAwsSync)
+            if (false && !string.IsNullOrWhiteSpace(mail) && sdata.EnableAwsSync)
             {
                 var payload = new { PaymentId = payment.Id };
                 await _db.EnqueueOutboxJobAsync(new OutboxJob
@@ -449,8 +449,8 @@ public partial class ClientDetailViewModel : ObservableObject
         }
         catch { }
 
-        // Hint scheduler to run soon
-        try { var scheduler = ServiceHelper.GetService<SyncScheduler>(); _ = scheduler.SyncNowAsync(); } catch { }
+        // Immediate sync disabled to keep add local-only
+        // try { var scheduler = ServiceHelper.GetService<SyncScheduler>(); _ = scheduler.SyncNowAsync(); } catch { }
     }
 
     [RelayCommand]

@@ -61,7 +61,7 @@
                             <StackLayout Spacing="8">
                                 <HorizontalStackLayout Spacing="10">
                                     <Label Text="🏷️" FontSize="16" />
-                                    <Label Text="FloorMeal Client (FMC) v1.0"
+                                    <Label Text="FloorMeal Client (FMC) v1.9"
                                            FontSize="14"
                                            FontAttributes="Bold"
                                            TextColor="#495057" />

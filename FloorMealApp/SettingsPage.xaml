@@ -17,63 +17,7 @@
             <!-- User Details -->
             <Label Text="User Details" FontAttributes="Bold" />
 
-            <!-- Profile Image Section -->
-            <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
-                <!-- Avatar with tap to pick image and plus overlay when empty -->
-                <Grid HeightRequest="96" WidthRequest="96" InputTransparent="False">
-                    <Frame HeightRequest="96" WidthRequest="96"
-                           CornerRadius="48"
-                           Padding="0"
-                           HasShadow="False"
-                           BackgroundColor="LightGray"
-                           InputTransparent="True" />
-                    <Image HeightRequest="96" WidthRequest="96"
-                           Aspect="AspectFill"
-                           Source="{Binding ProfileImagePath}"
-                           InputTransparent="True" />
-                    <Label Text="+"
-                           FontSize="36"
-                           TextColor="White"
-                           HorizontalTextAlignment="Center"
-                           VerticalTextAlignment="Center"
-                           IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}}"
-                           InputTransparent="True" />
-
-                    <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnAvatarTapped" />
-                    </Grid.GestureRecognizers>
-                </Grid>
-
-                <!-- Profile Image Buttons -->
-                <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                    <Button Text="📷 Change Photo" 
-                            BackgroundColor="#2196F3" 
-                            TextColor="White" 
-                            CornerRadius="15"
-                            FontSize="12"
-                            Clicked="OnAvatarTapped" />
-                    <Button Text="🗑️ Remove" 
-                            BackgroundColor="#F44336" 
-                            TextColor="White" 
-                            CornerRadius="15"
-                            FontSize="12"
-                            Command="{Binding RemoveProfileImageCommand}"
-                            IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}, ConverterParameter=Invert}" />
-                </HorizontalStackLayout>
-                
-                <!-- Image Status -->
-                <Label Text="Tap image or button to change profile photo" 
-                       FontSize="12" 
-                       TextColor="Gray" 
-                       HorizontalTextAlignment="Center"
-                       IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}}" />
-                <Label Text="✅ Profile photo will be uploaded to cloud when you save" 
-                       FontSize="12" 
-                       TextColor="Green" 
-                       HorizontalTextAlignment="Center"
-                       IsVisible="{Binding ProfileImagePath, Converter={StaticResource NullOrWhiteToBool}, ConverterParameter=Invert}" />
-            </VerticalStackLayout>
-
+            
             <Entry Placeholder="First Name" Text="{Binding FirstName}" MaxLength="15"  />
             <Entry Placeholder="Last Name" Text="{Binding LastName}" MaxLength="15" />
             <Entry Placeholder="Floor Meal Name" Text="{Binding FloorMealName}" MaxLength="25" FontAttributes="Bold" TextColor="#7C3AED" />

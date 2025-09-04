@@ -5,6 +5,18 @@ namespace ClientLedgerApp;
 public partial class CustomConfirmPage : ContentPage
 {
     private TaskCompletionSource<bool> _taskCompletionSource;
+
+    private async Task SafePopModalAsync()
+    {
+        try
+        {
+            if (Navigation?.ModalStack?.Count > 0)
+            {
+                await Navigation.PopModalAsync();
+            }
+        }
+        catch { }
+    }
     
     public CustomConfirmPage(string title, string message, AlertType type, string yesText = "Yes", string noText = "No")
     {
@@ -79,14 +91,14 @@ public partial class CustomConfirmPage : ContentPage
     private async void OnYesClicked(object sender, EventArgs e)
     {
         await AnimateExit();
-        await Navigation.PopModalAsync();
+        await SafePopModalAsync();
         _taskCompletionSource.SetResult(true);
     }
     
     private async void OnNoClicked(object sender, EventArgs e)
     {
         await AnimateExit();
-        await Navigation.PopModalAsync();
+        await SafePopModalAsync();
         _taskCompletionSource.SetResult(false);
     }
     
@@ -103,7 +115,7 @@ public partial class CustomConfirmPage : ContentPage
             await AnimateExit();
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Navigation.PopModalAsync();
+                await SafePopModalAsync();
                 _taskCompletionSource.SetResult(false);
             });
         });

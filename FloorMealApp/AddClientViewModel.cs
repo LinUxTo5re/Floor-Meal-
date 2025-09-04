@@ -11,23 +11,20 @@ public partial class AddClientViewModel : ObservableObject
 {
     private readonly IDatabaseService _db;
     private readonly IAwsSyncService _aws;
-    private readonly IImgBBService _imgBBService;
     private readonly ICustomAlertService _alertService;
     
     [ObservableProperty] private string name = string.Empty;
     [ObservableProperty] private string? contact;
     [ObservableProperty] private string? notes;
-    [ObservableProperty] private string? photoPath;
 
     [ObservableProperty] private bool nameErrorVisible;
     [ObservableProperty] private bool contactErrorVisible;
     [ObservableProperty] private bool isSaving;
 
-    public AddClientViewModel(IDatabaseService db, IAwsSyncService aws, IImgBBService imgBBService, ICustomAlertService alertService)
+    public AddClientViewModel(IDatabaseService db, IAwsSyncService aws, ICustomAlertService alertService)
     {
         _db = db;
         _aws = aws;
-        _imgBBService = imgBBService;
         _alertService = alertService;
     }
 
@@ -54,52 +51,34 @@ public partial class AddClientViewModel : ObservableObject
                 return ti.ToTitleCase(s.ToLower());
             }
 
-            // Do not block UI with uploads; keep local path for now, upload in background after save
-            string? imgBBUrl = !string.IsNullOrWhiteSpace(PhotoPath) && System.IO.File.Exists(PhotoPath) ? PhotoPath : null;
-            string? imgBBDeleteUrl = null;
-            var localPhotoPath = imgBBUrl; // capture for background upload
-
             var client = new Client
             {
                 Name = ToTitle(Name.Trim()),
                 Contact = string.IsNullOrWhiteSpace(Contact) ? null : Contact.Trim(),
-                Profile = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim(),
-                PhotoPath = imgBBUrl,
-                PhotoDeleteUrl = imgBBDeleteUrl
+                Profile = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim()
             };
 
             await _db.AddClientAsync(client);
 
             // Enqueue durable outbox jobs for background processing
-            if (!string.IsNullOrWhiteSpace(localPhotoPath) && System.IO.File.Exists(localPhotoPath))
-            {
-                var payload = new { ClientId = client.Id, LocalPhotoPath = localPhotoPath };
-                await _db.EnqueueOutboxJobAsync(new OutboxJob
-                {
-                    Type = "UploadClientPhoto",
-                    PayloadJson = JsonSerializer.Serialize(payload),
-                    Attempts = 0,
-                    MaxAttempts = 5,
-                    NextAttemptUtc = DateTime.UtcNow
-                });
-            }
-            // Only enqueue AWS push if sync is enabled and MailId present
+                        // Only enqueue AWS push if sync is enabled and MailId present
             try
             {
                 var sjson = await _db.GetSettingAsync("app.settings.json") ?? string.Empty;
                 var sdata = string.IsNullOrWhiteSpace(sjson) ? new SettingsData() : (JsonSerializer.Deserialize<SettingsData>(sjson) ?? new SettingsData());
                 var mail = sdata.MailId?.Trim();
-                if (!string.IsNullOrWhiteSpace(mail) && sdata.EnableAwsSync)
+                if (false && !string.IsNullOrWhiteSpace(mail) && sdata.EnableAwsSync)
                 {
-                    var awsPayload = new { ClientId = client.Id };
-                    await _db.EnqueueOutboxJobAsync(new OutboxJob
-                    {
-                        Type = "AwsPutClient",
-                        PayloadJson = JsonSerializer.Serialize(awsPayload),
-                        Attempts = 0,
-                        MaxAttempts = 5,
-                        NextAttemptUtc = DateTime.UtcNow
-                    });
+                // Immediate AWS enqueue disabled; periodic background sync will push changes.
+                var awsPayload = new { ClientId = client.Id };
+                await _db.EnqueueOutboxJobAsync(new OutboxJob
+                {
+                Type = "AwsPutClient",
+                PayloadJson = JsonSerializer.Serialize(awsPayload),
+                Attempts = 0,
+                MaxAttempts = 5,
+                NextAttemptUtc = DateTime.UtcNow
+                });
                 }
             }
             catch (Exception ex)
@@ -107,12 +86,13 @@ public partial class AddClientViewModel : ObservableObject
                 Debug.WriteLine($"Enqueue AWS client job failed: {ex.Message}");
             }
 
-            // Kick the scheduler to process outbox soon (non-blocking)
-            try { var scheduler = ServiceHelper.GetService<SyncScheduler>(); _ = scheduler.SyncNowAsync(); } catch { }
+            // Immediate sync disabled to keep add local-only
+            // try { var scheduler = ServiceHelper.GetService<SyncScheduler>(); _ = scheduler.SyncNowAsync(); } catch { }
 
-            // Show success message and navigate back immediately
-            await _alertService.ShowSuccessAsync($"Client '{client.Name}' has been added successfully!");
+            // notify dashboard to refresh, navigate back immediately, then show success
+            CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new DataInvalidatedMessage("clients"), "clients");
             await Shell.Current.GoToAsync("..");
+            await _alertService.ShowSuccessAsync($"Client '{client.Name}' has been added successfully!");
         }
         catch (Exception ex)
         {

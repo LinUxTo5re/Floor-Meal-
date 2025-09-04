@@ -79,7 +79,19 @@ public partial class CustomAlertPage : ContentPage
     {
         if (!_dismissible) return;
         await AnimateExit();
-        await Navigation.PopModalAsync();
+        await SafePopModalAsync();
+    }
+
+    private async Task SafePopModalAsync()
+    {
+        try
+        {
+            if (Navigation?.ModalStack?.Count > 0)
+            {
+                await Navigation.PopModalAsync();
+            }
+        }
+        catch { }
     }
     
     // Handle back button on Android
@@ -91,7 +103,7 @@ public partial class CustomAlertPage : ContentPage
             await AnimateExit();
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Navigation.PopModalAsync();
+                await SafePopModalAsync();
             });
         });
         return true;

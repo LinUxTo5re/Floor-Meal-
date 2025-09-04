@@ -120,13 +120,11 @@ public class AwsSyncService : IAwsSyncService
             if (resp.Item == null || resp.Item.Count == 0) return;
             resp.Item.TryGetValue("SmtpUser", out var smtpUserAttr);
             resp.Item.TryGetValue("SmtpAppPassword", out var smtpPassAttr);
-            resp.Item.TryGetValue("ImgBBApiKey", out var imgBBApiKeyAttr);
             var cred = new Credentials
             {
                 Email = "GLOBAL",
                 SmtpUser = smtpUserAttr?.S,
                 SmtpAppPassword = smtpPassAttr?.S,
-                ImgBBApiKey = imgBBApiKeyAttr?.S,
                 IsActive = 1
             };
             await _db.UpsertCredentialsAsync(cred);
@@ -282,8 +280,6 @@ public class AwsSyncService : IAwsSyncService
             };
             if (!string.IsNullOrWhiteSpace(client.Contact)) item["Contact"] = new AttributeValue { S = client.Contact };
             if (!string.IsNullOrWhiteSpace(client.Profile)) item["Profile"] = new AttributeValue { S = client.Profile };
-            if (!string.IsNullOrWhiteSpace(client.PhotoPath)) item["PhotoPath"] = new AttributeValue { S = client.PhotoPath };
-            if (!string.IsNullOrWhiteSpace(client.PhotoDeleteUrl)) item["PhotoDeleteUrl"] = new AttributeValue { S = client.PhotoDeleteUrl };
             item["CreatedAtTicks"] = new AttributeValue { N = client.CreatedAt.Ticks.ToString() };
             await ddb.PutItemAsync(new PutItemRequest { TableName = TBL_CLIENT, Item = item });
         }
@@ -468,8 +464,6 @@ public class AwsSyncService : IAwsSyncService
                         Name = doc.TryGetValue("Name", out var nm) ? (nm.AsString() ?? string.Empty) : string.Empty,
                         Contact = doc.TryGetValue("Contact", out var ct) ? ct.AsString() : null,
                         Profile = doc.TryGetValue("Profile", out var pf) ? pf.AsString() : null,
-                        PhotoPath = doc.TryGetValue("PhotoPath", out var pp) ? pp.AsString() : null,
-                        PhotoDeleteUrl = doc.TryGetValue("PhotoDeleteUrl", out var pdu) ? pdu.AsString() : null,
                         CreatedAt = doc.TryGetValue("CreatedAtTicks", out var ca) ? new DateTime(ca.AsLong()) : DateTime.UtcNow
                     };
                     
@@ -504,8 +498,6 @@ public class AwsSyncService : IAwsSyncService
             doc["Name"] = c.Name ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(c.Contact)) doc["Contact"] = c.Contact;
             if (!string.IsNullOrWhiteSpace(c.Profile)) doc["Profile"] = c.Profile;
-            if (!string.IsNullOrWhiteSpace(c.PhotoPath)) doc["PhotoPath"] = c.PhotoPath;
-            if (!string.IsNullOrWhiteSpace(c.PhotoDeleteUrl)) doc["PhotoDeleteUrl"] = c.PhotoDeleteUrl;
             doc["CreatedAtTicks"] = c.CreatedAt.Ticks;
             await table.PutItemAsync(doc);
         }

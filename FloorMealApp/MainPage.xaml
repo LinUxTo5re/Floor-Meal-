@@ -43,27 +43,37 @@
             </Frame>
 
             <!-- Client List -->
-            <CollectionView Grid.Row="2" ItemsSource="{Binding Clients}" SelectionMode="Single" SelectionChanged="CollectionView_SelectionChanged">
+            <CollectionView Grid.Row="2" ItemsSource="{Binding Clients}" SelectionMode="None">
                 <CollectionView.EmptyView>
                     <Label Text="No clients yet. Use Add Client to create." HorizontalOptions="Center" VerticalOptions="Center"/>
                 </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid Padding="12" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
-                            <!-- Profile Image -->
-                            <Frame Grid.RowSpan="3" HeightRequest="44" WidthRequest="44" CornerRadius="22" Padding="0" HasShadow="False" BackgroundColor="{Binding ., Converter={StaticResource ProfileBg}}">
-                                <Image Source="{Binding PhotoPath}" Aspect="AspectFill" />
-                            </Frame>
-                            <!-- Name and contact -->
-                            <Label Grid.Column="1" Grid.Row="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16"/>
-                            <Label Grid.Column="1" Grid.Row="1" Text="{Binding Contact}" Opacity="0.7"/>
-                            <Label Grid.Column="1" Grid.Row="2" Text="{Binding Profile}" LineBreakMode="TailTruncation" MaxLines="1" Opacity="0.7"/>
-                            <!-- Orders/Pending -->
-                            <HorizontalStackLayout Grid.Row="2" Grid.Column="2" Spacing="12" VerticalOptions="End">
-                                <Label Text="{Binding OrderCount, StringFormat='Orders: {0}'}"/>
-                                <Label Text="{Binding Pending, StringFormat='Pending: ₹{0:N2}'}"/>
-                            </HorizontalStackLayout>
-                        </Grid>
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems Mode="Reveal">
+                                    <SwipeItem Text="Edit" BackgroundColor="#4CAF50" Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.EditClientCommand}" CommandParameter="{Binding .}" />
+                                    <SwipeItem Text="Delete" BackgroundColor="#F44336" Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.DeleteClientCommand}" CommandParameter="{Binding .}" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Grid Padding="12" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.SelectClientCommand}" CommandParameter="{Binding .}" NumberOfTapsRequired="1" />
+                                </Grid.GestureRecognizers>
+                                <!-- Removed profile image -->
+                                <!-- Name and contact -->
+                                <Label Grid.Column="1" Grid.Row="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16"/>
+                                <Label Grid.Column="1" Grid.Row="1" Text="{Binding Contact}" Opacity="0.7"/>
+                                <Label Grid.Column="1" Grid.Row="2" Text="{Binding Profile}" LineBreakMode="TailTruncation" MaxLines="1" Opacity="0.7"/>
+                                <!-- Orders/Pending -->
+                                <HorizontalStackLayout Grid.Row="2" Grid.Column="2" Spacing="12" VerticalOptions="End">
+                                    <Label Text="{Binding OrderCount, StringFormat='Orders: {0}'}"/>
+                                    <Label Text="{Binding Pending, StringFormat='Pending: ₹{0:N2}'}"/>
+                                </HorizontalStackLayout>
+                                <!-- Slim divider between items -->
+                                <BoxView Grid.Row="3" Grid.ColumnSpan="3" HeightRequest="1" BackgroundColor="#E0E0E0" Opacity="0.7" HorizontalOptions="Fill" VerticalOptions="End" />
+                            </Grid>
+                        </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

@@ -94,7 +94,8 @@ public partial class LoginViewModel : ObservableObject
         if (remoteCred != null)
             await _db.UpsertCredentialsAsync(remoteCred);
 
-        await _aws.SyncAllForUserAsync(Email.Trim());
+        // Skip heavy cloud sync here to speed up initial load; background push will handle uploads
+        // await _aws.SyncAllForUserAsync(Email.Trim());
 
         // Persist email after successful verification
         var json = await _db.GetSettingAsync(SettingsPrefKey) ?? string.Empty;
@@ -114,6 +115,14 @@ public partial class LoginViewModel : ObservableObject
         data.EnableAwsSync = true;
         var newJson = JsonSerializer.Serialize(data);
         await _db.SetSettingAsync(SettingsPrefKey, newJson);
+        
+        // Trigger immediate hydration if local database is empty (fresh install/new login)
+        try
+        {
+            var scheduler = ServiceHelper.GetService<SyncScheduler>();
+            await scheduler.SyncIfLocalEmptyAsync();
+        }
+        catch { }
 
         var isNewUser = !hadMail;
         if (isNewUser)

@@ -46,6 +46,8 @@ tb.BorderBrush = brush;
 		builder.Services.AddTransient<PaymentsPage>();
 		builder.Services.AddTransient<AddClientViewModel>();
 		builder.Services.AddTransient<AddClientPage>();
+		builder.Services.AddTransient<EditClientViewModel>();
+		builder.Services.AddTransient<EditClientPage>();
 		builder.Services.AddSingleton<SettingsViewModel>();
 		builder.Services.AddTransient<SettingsPage>();
 		builder.Services.AddSingleton<LoginViewModel>();
@@ -56,7 +58,6 @@ tb.BorderBrush = brush;
 		builder.Services.AddSingleton<IAwsSyncService, AwsSyncService>();
 		builder.Services.AddSingleton<SyncScheduler>();
 		// ImgBB image upload service
-		builder.Services.AddSingleton<IImgBBService, ImgBBService>();
 		// Permission service for camera and storage
 		builder.Services.AddSingleton<IPermissionService, PermissionService>();
 		// Custom alert service for beautiful dialogs

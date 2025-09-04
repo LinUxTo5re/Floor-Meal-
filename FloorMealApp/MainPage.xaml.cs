@@ -18,6 +18,11 @@ public partial class MainPage : ContentPage
         _alertService = ServiceHelper.GetService<ICustomAlertService>();
                 _developerInfoService = ServiceHelper.GetService<IDeveloperInfoService>();
         BindingContext = _vm;
+        // refresh dashboard on data changes (e.g., edit client)
+        CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Register<MainPage, DataInvalidatedMessage, string>(this, "clients", async (r, m) =>
+        {
+            await _vm.LoadAsync();
+        });
     }
 
     protected override async void OnAppearing()

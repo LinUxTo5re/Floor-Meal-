@@ -41,13 +41,13 @@ public partial class App : Application
 			}
 			catch { }
 
-			// Preload profile images for fast access (only if ImgBB API key is configured)
-			try
-			{
-				var imgBBService = ServiceHelper.GetService<IImgBBService>();
-				_ = Task.Run(async () => await imgBBService.PreloadAllProfileImagesAsync());
-			}
-			catch { /* ignore */ }
+			// Preload profile images disabled (ImgBB disabled for performance)
+			// try
+			// {
+			//     var imgBBService = ServiceHelper.GetService<IImgBBService>();
+			//     _ = Task.Run(async () => await imgBBService.PreloadAllProfileImagesAsync());
+			// }
+			// catch { /* ignore */ }
 		}
 		catch { }
 	}
